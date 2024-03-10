@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
         printf("Usage: %s <port> <algorithm>\n", argv[0]);
         return 1;
     }
-
+    // transform the information that we get and declaring all the variabels and objects
     int port = atoi(argv[1]);
     char* algo = argv[2];
 
@@ -78,15 +78,15 @@ int main(int argc, char* argv[]) {
         perror("Error creating file");
         exit(1);
     }
-
+    // the time meassure
     clock_t start_time, end_time;
     double total_time;
     start_time = clock();   
 
     ssize_t total_bytes_received = 0;
     ssize_t bytes_received;
-    int is_exit_found = FALSE;
-
+    // the recivieng process
+    // were receveing the buffers one by one and writing them down on the new file 
     while ((bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0)) > 0) {
         total_bytes_received += bytes_received;
 
@@ -100,9 +100,11 @@ int main(int argc, char* argv[]) {
             size_t bytes_to_write = exit_position - buffer;
             fwrite(buffer, 1, bytes_to_write, file);
             fclose(file);
+
             end_time = clock();
             total_time = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
             printf("File received and saved as %s (Time taken: %.8f seconds)\n", name, total_time);
+            
             double average_bandwidth = (total_bytes_received * 8) / (total_time * 1024 * 1024); // in Mbps
             printf("Average Bandwidth: %.2f Mbps\n", average_bandwidth);
 
@@ -113,6 +115,7 @@ int main(int argc, char* argv[]) {
                 perror("Error creating file");
                 exit(1);
             }
+            
             fwrite(exit_position + strlen("\exit") + 1, 1, bytes_received - bytes_to_write - strlen("\exit") - 1, file);
             start_time = clock();
             continue;
@@ -120,7 +123,7 @@ int main(int argc, char* argv[]) {
             fwrite(buffer, 1, bytes_received, file);
         }
     } 
-
+    // closing the file 
     fclose(file);
 
     // Close sockets
