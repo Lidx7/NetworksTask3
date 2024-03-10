@@ -92,8 +92,8 @@ int main(int argc, char* argv[]) {
             if ((bytes_received > 0) && (strstr(buffer, "\exit") == NULL)){
                 fwrite(buffer, 1, bytes_received, file);
             }
-            else if(bytes_received > 0 && (strstr(buffer, "\exit") != NULL)){
-                fwrite(buffer, 1, (buffer - (strstr(buffer, "\exit"))), file);
+            if(bytes_received > 0 && (strstr(buffer, "\exit") != NULL)){
+                fwrite((strstr(buffer, "\exit")) + strlen("\exit") + 1, 1, bytes_received - ((strstr(buffer, "\exit")) - buffer) - strlen("\exit") - 1, file);
                 is_exit_found = TRUE;
             }
 
