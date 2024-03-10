@@ -12,7 +12,10 @@
 #define TRUE 1
 
 int main(int argc, char* argv[]) {
-    
+    if (argc < 3) {
+        printf("Usage: %s <port> <algorithm>\n", argv[0]);
+        return 1;
+    }
 
     int port = atoi(argv[1]);
     char* algo = argv[2];
@@ -67,59 +70,58 @@ int main(int argc, char* argv[]) {
     printf("Client connected from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
     // Receive file data
-    
     int repeat_counter = 0;
-        char name[50];
-        sprintf(name, "received_file%d.txt", repeat_counter);
-    
-        FILE *file = fopen(name, "wb");
-        clock_t start_time, end_time;
-        double total_time;
-        start_time = clock();   
+    char name[50];
+    sprintf(name, "received_file%d.txt", repeat_counter);
+    FILE *file = fopen(name, "wb");
+    if (file == NULL) {
+        perror("Error creating file");
+        exit(1);
+    }
 
-        ssize_t total_bytes_received = 0;
-        ssize_t bytes_received;
-        int is_exit_found = FALSE;
+    clock_t start_time, end_time;
+    double total_time;
+    start_time = clock();   
 
-        while((bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0)) > 0){
-            total_bytes_received += bytes_received;
+    ssize_t total_bytes_received = 0;
+    ssize_t bytes_received;
+    int is_exit_found = FALSE;
 
-            if (bytes_received < 0) {
-                perror("Error receiving data");
+    while ((bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0)) > 0) {
+        total_bytes_received += bytes_received;
+
+        if (bytes_received < 0) {
+            perror("Error receiving data");
+            exit(1);
+        }
+
+        if (strstr(buffer, "\exit") != NULL) {
+            char* exit_position = strstr(buffer, "\exit");
+            size_t bytes_to_write = exit_position - buffer;
+            fwrite(buffer, 1, bytes_to_write, file);
+            fclose(file);
+            end_time = clock();
+            total_time = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
+            printf("File received and saved as %s (Time taken: %.8f seconds)\n", name, total_time);
+            double average_bandwidth = (total_bytes_received * 8) / (total_time * 1024 * 1024); // in Mbps
+            printf("Average Bandwidth: %.2f Mbps\n", average_bandwidth);
+
+            repeat_counter++;
+            sprintf(name, "received_file%d.txt", repeat_counter); 
+            file = fopen(name, "wb");
+            if (file == NULL) {
+                perror("Error creating file");
                 exit(1);
             }
+            fwrite(exit_position + strlen("\exit") + 1, 1, bytes_received - bytes_to_write - strlen("\exit") - 1, file);
+            start_time = clock();
+            continue;
+        } else {
+            fwrite(buffer, 1, bytes_received, file);
+        }
+    } 
 
-            if ((bytes_received > 0) && (strstr(buffer, "\exit") == NULL)){
-                fwrite(buffer, 1, bytes_received, file);
-            }
-            if(bytes_received > 0 && (strstr(buffer, "\exit") != NULL)){
-                fwrite((strstr(buffer, "\exit")) + strlen("\exit") + 1, 1, bytes_received - ((strstr(buffer, "\exit")) - buffer) - strlen("\exit") - 1, file);
-                is_exit_found = TRUE;
-            }
-
-            if(is_exit_found){
-                fclose(file);
-                end_time = clock();
-                total_time = ((double)(end_time - start_time)) / (CLOCKS_PER_SEC);
-                printf("File received and saved as %s (Time taken: %.8f seconds)\n", name, (total_time));
-                double average_bandwidth = (total_bytes_received * 8) / (total_time * 1024 * 1024); // in Mbps
-                printf("Average Bandwidth: %.2f Mbps\n", average_bandwidth);
-                repeat_counter++;
-                sprintf(name, "received_data%d.txt", repeat_counter); 
-
-                file = fopen(name, "wb");
-                if (file == NULL) {
-                    perror("Error creating file");
-                    exit(1);
-                }
-                start_time = clock();
-                is_exit_found = FALSE;
-            }
-
-        } 
-        fclose(file);
-
-    
+    fclose(file);
 
     // Close sockets
     close(client_socket);
