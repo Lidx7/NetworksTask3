@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     if (strcmp(algo, "reno") == 0 || strcmp(algo, "cubic") == 0) {
-        if (setsockopt(network_socket, IPPROTO_TCP, TCP_CONGESTION, algo, strlen(algo)) < 0) {
+        if (setsockopt(network_socket, IPPROTO_TCP, TCP_CONGESTION, algo, strlen(algo) + 1) < 0) {
             printf("Error setting congestion control algorithm\n");
             return 1;
         }
@@ -100,12 +100,11 @@ int main(int argc, char* argv[]) {
     do {
     
         sendData(network_socket, rand_file, MIN_SIZE);
+        send(network_socket, "\exit", strlen("\exit") + 1, 0);
         printf("Do you want to send the file again? type y for yes, any other character for no\n");
         scanf(" %c", &again);
     } while (again == 'y' || again == 'Y');
 
-
-    send(network_socket, "exit", strlen("exit"), 0);
     close(network_socket);
     free(rand_file);
 
