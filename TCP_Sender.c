@@ -13,7 +13,6 @@
 
 #define RENO "reno"
 #define CUBIC "cubic"
-#define FIL // Enter the right file here (not completed)
 #define MIN_SIZE 2097152
 #define FILE_SIZE 2000000 
 
@@ -62,8 +61,14 @@ int main(int argc, char* argv[]) {
         printf("Usage: %s <IP> <port> <algorithm>\n", argv[0]);
         return 1;
     }
+    int file_size;
+    do{
+        printf("Enter the size of the file to be sent (minimum size is 2MB): ");
+        scanf("%d", &file_size);
+    }while(file_size < MIN_SIZE);
 
-    char* rand_file = util_generate_random_data(MIN_SIZE);
+    char* rand_file = util_generate_random_data(file_size);
+
     char* ip = argv[1];
     int port = atoi(argv[2]);
     char* algo = argv[3];
@@ -99,7 +104,7 @@ int main(int argc, char* argv[]) {
     char again;
     do {
     
-        sendData(network_socket, rand_file, MIN_SIZE);
+        sendData(network_socket, rand_file, file_size);
         send(network_socket, "\exit", strlen("\exit") + 1, 0);
         printf("Do you want to send the file again? type y for yes, any other character for no\n");
         scanf(" %c", &again);
@@ -111,4 +116,3 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
-

@@ -8,6 +8,8 @@
 #include <netinet/tcp.h>
 #include <time.h>
 #define BUFFER_SIZE 4096
+#define FALSE 0
+#define TRUE 1
 
 int main(int argc, char* argv[]) {
     
@@ -77,7 +79,8 @@ int main(int argc, char* argv[]) {
 
         ssize_t total_bytes_received = 0;
         ssize_t bytes_received;
-        
+        int is_exit_found = FALSE;
+
         while((bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0)) > 0){
             total_bytes_received += bytes_received;
 
@@ -86,11 +89,15 @@ int main(int argc, char* argv[]) {
                 exit(1);
             }
 
-            if ((bytes_received > 0) && (strncmp(buffer,"\exit", strlen("\exit")) != 0)) {
+            if ((bytes_received > 0) && (strstr(buffer, "\exit") == NULL)){
                 fwrite(buffer, 1, bytes_received, file);
             }
+            else if(bytes_received > 0 && (strstr(buffer, "\exit") != NULL)){
+                fwrite(buffer, 1, (buffer - (strstr(buffer, "\exit"))), file);
+                is_exit_found = TRUE;
+            }
 
-            if(strncmp(buffer,"\exit", strlen("\exit")) == 0){
+            if(is_exit_found){
                 fclose(file);
                 end_time = clock();
                 total_time = ((double)(end_time - start_time)) / (CLOCKS_PER_SEC);
@@ -99,14 +106,14 @@ int main(int argc, char* argv[]) {
                 printf("Average Bandwidth: %.2f Mbps\n", average_bandwidth);
                 repeat_counter++;
                 sprintf(name, "received_data%d.txt", repeat_counter); 
+
                 file = fopen(name, "wb");
-                
                 if (file == NULL) {
                     perror("Error creating file");
                     exit(1);
                 }
                 start_time = clock();
-
+                is_exit_found = FALSE;
             }
 
         } 
